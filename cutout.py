@@ -36,7 +36,8 @@ CUTOUT_ACTIVATION = "https://restapi.cutout.pro/user/activeEmail?token={token}"
 CUTOUT_SECRET_KEY = "https://restapi.cutout.pro/user/apikey"
 # {"code":0,"data":"283b50a369904e70a0f9c02696259169","msg":"","time":1682031199559}
 
-CUTOUT_IMAGE_ENHANCE = "https://www.cutout.pro/api/v1/matting?mattingType=18"
+CUTOUT_IMAGE_ENHANCE = "https://www.cutout.pro/api/v1/matting?mattingType=18&outputFormat=jpg_100"
+CUTOUT_BACKGROUND_REMOVE = "https://www.cutout.pro/api/v1/matting?mattingType=6"
 
 class CutoutProClient:
     def __init__(self):
@@ -63,9 +64,13 @@ class CutoutProClient:
         temp_email = TempMail()
         self.email = temp_email.email
         self._reg_new_user()
-        sleep(5)
-
-        _id = temp_email.get_email_id_from_subject("Activate your cutout.pro account")
+        for i in range(5):
+            _id = temp_email.get_email_id_from_subject("Activate your cutout.pro account")
+            if _id:
+                break
+            sleep(2)
+        else:
+            return
 
         _token = re.search(r'token=([^\s&]+)"', temp_email.get_email_content(_id)).group(1)
 
@@ -106,6 +111,24 @@ class CutoutProClient:
         else:
             with open(save_path, 'wb') as out:
                 out.write(response.content)
+
+    def background_remove(self,img_path,save_path=None):
+        print(f"background remove {img_path}...")
+        if save_path is None:
+            _dir, _file = os.path.split(img_path)
+            _file = f"nobg_{_file.split('.')[0]}.png"
+            save_path = os.path.join(_dir, _file)
+        response = requests.post(
+            CUTOUT_IMAGE_ENHANCE,
+            files={'file': open(img_path, 'rb')},
+            headers={'APIKEY': self.secret_key}
+        )
+        if self.check_it_failed(response):
+            self.background_remove(img_path, save_path)
+        else:
+            with open(save_path, 'wb') as out:
+                out.write(response.content)
+        return save_path
 
     def check_it_failed(self,response):
         try:
