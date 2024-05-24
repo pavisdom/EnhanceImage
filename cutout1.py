@@ -36,7 +36,7 @@ CUTOUT_ACTIVATION = "https://restapi.cutout.pro/user/activeEmail?token={token}"
 CUTOUT_SECRET_KEY = "https://restapi.cutout.pro/user/apikey"
 # {"code":0,"data":"283b50a369904e70a0f9c02696259169","msg":"","time":1682031199559}
 
-CUTOUT_IMAGE_ENHANCE = "https://www.cutout.pro/api/v1/matting?mattingType=18&outputFormat=jpg_100"
+CUTOUT_IMAGE_ENHANCE = "https://www.cutout.pro/api/v1/matting?mattingType=18&outputFormat={format}"
 CUTOUT_BACKGROUND_REMOVE = "https://www.cutout.pro/api/v1/matting?mattingType=6"
 
 class CutoutProClient:
@@ -70,7 +70,8 @@ class CutoutProClient:
                 break
             sleep(2)
         else:
-            return
+            # return
+            self.init_from_new_email()
 
         _token = re.search(r'token=([^\s&]+)"', temp_email.get_email_content(_id)).group(1)
 
@@ -95,14 +96,14 @@ class CutoutProClient:
         res = requests.get(CUTOUT_SECRET_KEY,headers={"token":self.token})
         self.secret_key = res.json()["data"]
 
-    def image_enhance(self,img_path,save_path=None):
+    def image_enhance(self,img_path,quality="jpg_100",save_path=None):
         print(f"enhancing {img_path}...")
         if save_path is None:
             _dir, _file = os.path.split(img_path)
             _file = f"enhanced_{_file.split('.')[0]}.png"
             save_path = os.path.join(_dir,_file)
         response = requests.post(
-            CUTOUT_IMAGE_ENHANCE,
+            CUTOUT_IMAGE_ENHANCE.format(format=quality),
             files={'file': open(img_path, 'rb')},
             headers={'APIKEY': self.secret_key}
         )
@@ -111,6 +112,7 @@ class CutoutProClient:
         else:
             with open(save_path, 'wb') as out:
                 out.write(response.content)
+            return save_path
 
     def background_remove(self,img_path,save_path=None):
         print(f"background remove {img_path}...")
@@ -119,7 +121,7 @@ class CutoutProClient:
             _file = f"nobg_{_file.split('.')[0]}.png"
             save_path = os.path.join(_dir, _file)
         response = requests.post(
-            CUTOUT_IMAGE_ENHANCE,
+            CUTOUT_BACKGROUND_REMOVE,
             files={'file': open(img_path, 'rb')},
             headers={'APIKEY': self.secret_key}
         )
@@ -139,3 +141,14 @@ class CutoutProClient:
         except:
             pass
         return False
+
+    def download(self,img_path,enhance_quality,save_path):
+        _dir, _file = os.path.split(save_path)
+        _file = f"nobg_{_file.split('.')[0]}.png"
+        bg_path = os.path.join(_dir, _file)
+        _bg = self.background_remove(img_path, bg_path)
+        if enhance_quality:
+            _enh = self.image_enhance(img_path,quality=enhance_quality, save_path=save_path)
+        else:
+            _enh = img_path
+        return _bg, _enh

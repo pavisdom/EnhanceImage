@@ -1,3 +1,3 @@
 @echo off
 
-python run.py %*
+C:\Users\pavit\AppData\Local\Programs\Python\Python37\python.exe run.py %*
