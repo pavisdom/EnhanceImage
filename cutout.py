@@ -132,6 +132,10 @@ class CutoutProClient:
 
         with open(save_path, 'wb') as out:
             out.write(response.content)
+
+        if os.path.getsize(save_path) == 122:
+            return False
+
         return save_path
 
     def background_remove(self,img_path,save_path=None):
