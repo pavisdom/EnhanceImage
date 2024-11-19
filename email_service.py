@@ -23,7 +23,7 @@ class TempMail:
         return None
 
     def get_email_content(self,email_id):
-        print(email_id)
+        # print(email_id)
         url = READ_EMAIL.format(username=self.username,domain=self.domain,email_id=email_id)
-        print(url)
+        # print(url)
         return requests.get(url).json()["body"]

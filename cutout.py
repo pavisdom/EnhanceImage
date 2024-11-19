@@ -96,23 +96,43 @@ class CutoutProClient:
         res = requests.get(CUTOUT_SECRET_KEY,headers={"token":self.token})
         self.secret_key = res.json()["data"]
 
-    def image_enhance(self,img_path,quality="jpg_100",save_path=None):
-        print(f"enhancing {img_path}...")
+    def image_enhance(self,img_path,quality="jpg_100",save_path=None,output_folder="Enhanced", loop=False):
         if save_path is None:
             _dir, _file = os.path.split(img_path)
-            _file = f"enhanced_{_file.split('.')[0]}.png"
-            save_path = os.path.join(_dir,_file)
+            # _file = f"enhanced_{_file.split('.')[0]}.jpg"
+            save_path = os.path.join(_dir,output_folder,_file)
+        if not loop:
+            print(f"enhancing {save_path}...", end=" --- ")
+        else:
+            print("|", end="")
         response = requests.post(
             CUTOUT_IMAGE_ENHANCE.format(format=quality),
             files={'file': open(img_path, 'rb')},
             headers={'APIKEY': self.secret_key}
         )
         if self.check_it_failed(response):
-            self.image_enhance(img_path,save_path)
+            self.image_enhance(img_path,save_path, loop=True)
         else:
             with open(save_path, 'wb') as out:
                 out.write(response.content)
+                print("done!")
             return save_path
+    def image_enhance_clean(self,img_path,quality="jpg_100",output_folder="Enhanced"):
+        _dir, _file = os.path.split(img_path)
+        # _file = f"enhanced_{_file.split('.')[0]}.jpg"
+        save_path = os.path.join(_dir,output_folder,_file)
+
+        response = requests.post(
+            CUTOUT_IMAGE_ENHANCE.format(format=quality),
+            files={'file': open(img_path, 'rb')},
+            headers={'APIKEY': self.secret_key}
+        )
+        if self.check_it_failed(response):
+            return False
+
+        with open(save_path, 'wb') as out:
+            out.write(response.content)
+        return save_path
 
     def background_remove(self,img_path,save_path=None):
         print(f"background remove {img_path}...")
@@ -135,7 +155,7 @@ class CutoutProClient:
     def check_it_failed(self,response):
         try:
             if response.json()["data"] == None:
-                print(response.json())
+                # print(response.json())
                 self.init_from_new_email()
                 return True
         except:
