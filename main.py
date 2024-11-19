@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # This is a sample Python script.
 import os
 import re
@@ -39,7 +40,7 @@ def print_img_list(index=None,attempt=0,status=None):
         print_data["status"] = status or print_data["status"]
         print_list[index] = print_data
 
-    print_str = "\n".join(["{id}. {name} - {attempts} - {status}".format(**p) for p in print_list])
+    print_str = "\n".join(["{id:03d}. {name:<30} - {attempts} - {status:>10}".format(**p) for p in print_list])
     clear()
     print(print_str)
 
@@ -59,3 +60,13 @@ while True:
     if len(file_list) == 0:
         print("All images are done!")
         break
+
+x = input("Do you want to clean up all files? (y/n)")
+if x.lower() != "y":
+    exit()
+
+for f in [f_ for f_ in print_list if f_["status"] == "success"]:
+    src = f["file"]
+    _dir, _file = os.path.split(src)
+    dst = os.path.join(_dir,"old",_file)
+    os.rename(src, dst)
